@@ -1,0 +1,240 @@
+---
+swagger: "2.0"
+info:
+  description: "Care Plan Generator holds logic for generating CarePlan, Goal and\
+    \ Task from Templates together with auto assignment to correct providers from\
+    \ given Care Team"
+  version: "0.1"
+  title: "Care Plan Generator"
+  contact: {}
+paths:
+  /plans/instantiate:
+    post:
+      summary: "Generate new care plan"
+      description: "Generate new care plan for parameters and assign it to CareTeam\
+        \ and Patient. This is the API endpoint the frontend needs to call if the\
+        \ patient doesn’t already have a care plan. All tasks will be created and\
+        \ assigned to practitioners automatically depending on their roles"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "definitions"
+        description: "The definitions for Care Plan instantiation."
+        required: false
+        schema:
+          type: "object"
+          required:
+          - "careTeamId"
+          - "patientId"
+          - "planDefinitionId"
+          properties:
+            planDefinitionId:
+              type: "string"
+              format: "uuid"
+              example: "3a826713-276f-4297-a410-1c54ff1f0778"
+              description: "Plan definition id"
+            careTeamId:
+              type: "string"
+              format: "uuid"
+              example: "3ed7fa20-e8aa-44d7-8e15-25cb9587a093"
+              description: "Care team id"
+            patientId:
+              type: "string"
+              format: "uuid"
+              example: "113cb54f-15c1-427c-8eda-b1de552871ac"
+              description: "Patient id"
+            title:
+              type: "string"
+              example: "My super care plan for weight los"
+              description: "Optional title to overwrite templated value"
+            description:
+              type: "string"
+              example: "My super care plan for weight los"
+              description: "Optional description to overwrite templated value"
+            status:
+              type: "string"
+              description: "Optional status to overwrite the default \"draft\" status\
+                \ for new Care Plans"
+              enum:
+              - "draft"
+              - "active"
+              - "on-hold"
+              - "revoked"
+              - "completed"
+              - "entered-in-error"
+              - "unknown"
+        x-exportParamName: "Definitions"
+      responses:
+        "200":
+          description: "Success returns new care plan"
+          schema:
+            $ref: "#/definitions/successResponse"
+        "400":
+          description: "The request cannot be fulfilled due to bad params"
+          schema:
+            $ref: "#/definitions/clientErrorResponse"
+        "500":
+          description: "Internal Server Error"
+          schema:
+            $ref: "#/definitions/serverErrorResponse"
+  /plans/{carePlanId}/goals/instantiate:
+    post:
+      summary: "Generate new care plan goal from template and attach to a Care Plan"
+      description: "Generate new care plan goal from template and attach to a Care\
+        \ Plan. Removes old Care Plan Goal"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "definitions"
+        description: "The definitions for Goal instantiation."
+        required: false
+        schema:
+          type: "object"
+          required:
+          - "planDefinitionId"
+          properties:
+            planDefinitionId:
+              type: "string"
+              format: "uuid"
+              description: "Plan definition id"
+            description:
+              type: "string"
+              example: "My super care plan for weight los"
+              description: "Optional description to overwrite templated value"
+        x-exportParamName: "Definitions"
+      - name: "carePlanId"
+        in: "path"
+        description: "Existing Care Plan id"
+        required: true
+        type: "string"
+        format: "uuid"
+        x-exportParamName: "CarePlanId"
+      responses:
+        "200":
+          description: "Success returns new care plan"
+          schema:
+            $ref: "#/definitions/successResponse"
+        "400":
+          description: "The request cannot be fulfilled due to bad params"
+          schema:
+            $ref: "#/definitions/clientErrorResponse"
+        "500":
+          description: "Internal Server Error"
+          schema:
+            $ref: "#/definitions/serverErrorResponse"
+  /plans/{carePlanId}/tasks/instantiate:
+    post:
+      summary: "Generate new care plan task from template and attach to a Care Plan"
+      description: "Generate new care plan task from template and attach to a Care\
+        \ Plan"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "definitions"
+        description: "The definitions for Goal instantiation."
+        required: false
+        schema:
+          type: "object"
+          required:
+          - "taskTemplateId"
+          properties:
+            taskTemplateId:
+              type: "string"
+              format: "uuid"
+              description: "Task definition id"
+            description:
+              type: "string"
+              example: "My super care plan for weight los"
+              description: "Optional description to overwrite templated value"
+            status:
+              type: "string"
+              description: "Optional status to overwrite the default \"draft\" status\
+                \ for new Care Plans"
+              enum:
+              - "draft"
+              - "requested"
+              - "received"
+              - "accepted"
+        x-exportParamName: "Definitions"
+      - name: "carePlanId"
+        in: "path"
+        description: "Existing Care Plan id"
+        required: true
+        type: "string"
+        x-exportParamName: "CarePlanId"
+      responses:
+        "200":
+          description: "Success returns new care plan"
+          schema:
+            $ref: "#/definitions/successResponse"
+        "400":
+          description: "The request cannot be fulfilled due to bad params"
+          schema:
+            $ref: "#/definitions/clientErrorResponse"
+        "500":
+          description: "Internal Server Error"
+          schema:
+            $ref: "#/definitions/serverErrorResponse"
+definitions:
+  clientErrorResponse:
+    type: "object"
+    properties:
+      message:
+        type: "string"
+        description: "Short error description"
+      code:
+        type: "integer"
+        description: "Error code number, match http status code"
+      type:
+        type: "string"
+        description: "Error category name"
+      detailed_message:
+        type: "string"
+        description: "Long error description"
+    example:
+      message: "Name passed must contain only alphanumeric characters."
+      code: 400
+      type: "Validation"
+      detailed_message: "The Actual error (if any) that could have caused this issue."
+  serverErrorResponse:
+    type: "object"
+    properties:
+      message:
+        type: "string"
+        description: "Short error description"
+      code:
+        type: "integer"
+        description: "Error code number, match http status code"
+      type:
+        type: "string"
+        description: "Error category name"
+      detailed_message:
+        type: "string"
+        description: "Long error description"
+    example:
+      message: "Internal Server Error."
+      code: 500
+      type: "InternalError"
+      detailed_message: "Internal Server Error."
+  successResponse:
+    type: "object"
+    properties:
+      resource:
+        type: "string"
+        description: "FHIRr4 Resource name"
+      url:
+        type: "string"
+        format: "url"
+        description: "Url to newly created resource"
+    example:
+      resource: "resource"
+      url: "http://example.com/aeiou"
